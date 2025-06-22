@@ -525,8 +525,7 @@ def mobile():
 # Khi chạy file này trực tiếp bằng python app.py (không khuyến khích cho uvicorn),
 # nó sẽ chạy asgi_app với uvicorn.
 
-# --- THÊM: Tải file df_train.csv nếu chưa có ---
-
+# --- Tải file df_train.csv nếu chưa có ---
 DF_TRAIN_URL = "https://www.dropbox.com/scl/fi/txhte8yp8zs2fjoe21vp1/df_train.csv?rlkey=6ze6tcylq6vkpj0irhcaknkz8&st=9xzic2cf&dl=1"
 DF_TRAIN_PATH = "df_train.csv"
 
@@ -541,5 +540,8 @@ def download_if_not_exists():
         print("Download complete.")
 
 download_if_not_exists()
-
 # --- KẾT THÚC PHẦN THÊM ---
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
