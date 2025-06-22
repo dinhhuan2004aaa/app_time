@@ -5,6 +5,7 @@ import joblib
 import os
 import json
 import io
+import requests
 
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
@@ -523,3 +524,26 @@ def mobile():
 
 # Khi chạy file này trực tiếp bằng python app.py (không khuyến khích cho uvicorn),
 # nó sẽ chạy asgi_app với uvicorn.
+
+# --- THÊM: Tải file df_train.csv nếu chưa có ---
+
+DF_TRAIN_URL = "https://www.dropbox.com/scl/fi/txhte8yp8zs2fjoe21vp1/df_train.csv?rlkey=6ze6tcylq6vkpj0irhcaknkz8&st=9xzic2cf&dl=1"
+DF_TRAIN_PATH = "df_train.csv"
+
+def download_if_not_exists():
+    if not os.path.exists(DF_TRAIN_PATH):
+        print("Downloading large CSV file from Dropbox...")
+        r = requests.get(DF_TRAIN_URL, stream=True)
+        with open(DF_TRAIN_PATH, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+        print("Download complete.")
+
+download_if_not_exists()
+
+# --- KẾT THÚC PHẦN THÊM ---
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
