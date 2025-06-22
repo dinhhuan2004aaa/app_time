@@ -290,22 +290,24 @@ try:
     # --- THÊM: Load dữ liệu train gốc ---
     if os.path.exists(FULL_DATA_PATH):
         print(f"Loading full data from {FULL_DATA_PATH}...")
-        # Tùy thuộc vào định dạng file của bạn (.csv hoặc .parquet)
-        if FULL_DATA_PATH.endswith('.csv'):
-             full_data_df = pd.read_csv(FULL_DATA_PATH)
-        elif FULL_DATA_PATH.endswith('.parquet'):
-             full_data_df = pd.read_parquet(FULL_DATA_PATH)
-        else:
-             print("ERROR: Unsupported full data file format. Use .csv or .parquet.")
-             full_data_df = None
+        try:
+            if FULL_DATA_PATH.endswith('.csv'):
+                full_data_df = pd.read_csv(FULL_DATA_PATH)
+            elif FULL_DATA_PATH.endswith('.parquet'):
+                full_data_df = pd.read_parquet(FULL_DATA_PATH)
+            else:
+                print("ERROR: Unsupported full data file format. Use .csv or .parquet.")
+                full_data_df = None
 
-        if full_data_df is not None:
-             # Đảm bảo cột DATE là datetime và sắp xếp dữ liệu
-             full_data_df['DATE'] = pd.to_datetime(full_data_df['DATE'])
-             full_data_df = full_data_df.sort_values(['LONGITUDE', 'LATITUDE', 'DATE'])
-             print(f"Full data loaded with {len(full_data_df)} rows.")
-             print("Full data columns:", full_data_df.columns.tolist())
-
+            if full_data_df is not None:
+                # Đảm bảo cột DATE là datetime và sắp xếp dữ liệu
+                full_data_df['DATE'] = pd.to_datetime(full_data_df['DATE'])
+                full_data_df = full_data_df.sort_values(['LONGITUDE', 'LATITUDE', 'DATE'])
+                print(f"Full data loaded with {len(full_data_df)} rows.")
+                print("Full data columns:", full_data_df.columns.tolist())
+        except Exception as e:
+            print("ERROR: Cannot read df_train.csv:", e)
+            full_data_df = None
     else:
         print(f"ERROR: Full data file not found at {FULL_DATA_PATH}. Lag features will be less accurate or missing for early forecast dates.")
         full_data_df = None # Set về None nếu không tìm thấy file
@@ -545,9 +547,37 @@ def download_if_not_exists():
                 if chunk:
                     f.write(chunk)
         print("Download complete.")
-    return True
+    # Kiểm tra lại file có tồn tại và đọc được không
+    try:
+        pd.read_csv(DF_TRAIN_PATH, nrows=1)
+        print("df_train.csv is ready.")
+        return True
+    except Exception as e:
+        print("File exists but cannot be read:", e)
+        return False
 
 download_success = download_if_not_exists()
+
+# --- Load lại dữ liệu train nếu vừa tải xong ---
+if os.path.exists(FULL_DATA_PATH):
+    try:
+        print(f"Reloading full data from {FULL_DATA_PATH} after download...")
+        if FULL_DATA_PATH.endswith('.csv'):
+            full_data_df = pd.read_csv(FULL_DATA_PATH)
+        elif FULL_DATA_PATH.endswith('.parquet'):
+            full_data_df = pd.read_parquet(FULL_DATA_PATH)
+        else:
+            print("ERROR: Unsupported full data file format. Use .csv or .parquet.")
+            full_data_df = None
+
+        if full_data_df is not None:
+            full_data_df['DATE'] = pd.to_datetime(full_data_df['DATE'])
+            full_data_df = full_data_df.sort_values(['LONGITUDE', 'LATITUDE', 'DATE'])
+            print(f"Full data loaded with {len(full_data_df)} rows.")
+            print("Full data columns:", full_data_df.columns.tolist())
+    except Exception as e:
+        print("ERROR: Cannot read df_train.csv after download:", e)
+        full_data_df = None
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
