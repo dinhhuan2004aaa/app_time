@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dự báo nhiệt độ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 15px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-weight: bold;
+        }
+        .chart-container {
+            margin-top: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #chart {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Dự báo nhiệt độ</h2>
+    
+    <form id="predict-form">
+        <label for="station">Chọn trạm:</label>
+        <select id="station" name="station">
+            {% for station in stations %}
+                <option value="{{ loop.index0 }}">
+                    Trạm {{ loop.index }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Dự đoán</button>
+    </form>
+
+    <div class="chart-container">
+        <div id="chart"></div>
+    </div>
+
+    <script>
+        document.getElementById('predict-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var stationIndex = document.getElementById('station').value;
+            var stations = {{ stations|tojson }};
+            var selectedStation = stations[stationIndex];
+            var longitude = selectedStation['LONGITUDE'];
+            var latitude = selectedStation['LATITUDE'];
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    longitude: longitude,
+                    latitude: latitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    plotData(data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi dự báo');
+            });
+        });
+
+        function plotData(data) {
+            const history = data.history || [];
+            const forecast = data.forecast || [];
+
+            const historyTrace = {
+                x: history.map(d => d.DATE),
+                y: history.map(d => d.TMP_ACTUAL),
+                name: 'Lịch sử',
+                type: 'scatter',
+                line: {color: '#1f77b4'},
+                mode: 'lines+markers'
+            };
+
+            const forecastTrace = {
+                x: forecast.map(d => d.DATE),
+                y: forecast.map(d => d.TMP_PREDICTED),
+                name: 'Dự báo',
+                type: 'scatter',
+                line: {color: '#ff7f0e'},
+                mode: 'lines+markers'
+            };
+
+            const layout = {
+                title: 'Nhiệt độ theo thời gian',
+                xaxis: {title: 'Ngày'},
+                yaxis: {title: 'Nhiệt độ (°C)'},
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {orientation: 'h', y: -0.2}
+            };
+
+            Plotly.newPlot('chart', [historyTrace, forecastTrace], layout);
+        }
+    </script>
+</body>
+</html>
+                title: 'Nhiệt độ theo thời gian',
+                xaxis: {title: 'Ngày'},
+                yaxis: {title: 'Nhiệt độ (°C)'},
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {orientation: 'h', y: -0.2}
+            };
+
+            Plotly.newPlot('chart', [historyTrace, forecastTrace], layout);
+        }
+    </script>
+</body>
+</html>
