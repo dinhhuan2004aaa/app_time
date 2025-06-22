@@ -543,7 +543,3 @@ def download_if_not_exists():
 download_if_not_exists()
 
 # --- KẾT THÚC PHẦN THÊM ---
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
