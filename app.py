@@ -335,6 +335,10 @@ def predict():
     if model is None or not model.is_trained:
          return jsonify({'error': 'Model not loaded or not trained'}), 500
 
+    # THÊM: Kiểm tra dữ liệu train đã load chưa
+    if full_data_df is None:
+        return jsonify({'error': 'Dữ liệu train (df_train.csv) chưa sẵn sàng hoặc tải về bị lỗi. Vui lòng thử lại sau!'}), 500
+
     try:
         # Nếu là upload file CSV
         if 'csv_file' in request.files:
@@ -533,14 +537,17 @@ def download_if_not_exists():
     if not os.path.exists(DF_TRAIN_PATH):
         print("Downloading large CSV file from Dropbox...")
         r = requests.get(DF_TRAIN_URL, stream=True)
+        if r.status_code != 200:
+            print("Download failed! Status code:", r.status_code)
+            return False
         with open(DF_TRAIN_PATH, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
         print("Download complete.")
+    return True
 
-download_if_not_exists()
-# --- KẾT THÚC PHẦN THÊM ---
+download_success = download_if_not_exists()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
